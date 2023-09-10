@@ -63,7 +63,7 @@ def detect_circles(image_path, output_path, dp=1.1, minDist=10, param1=300, para
     count_text = f"Pipes: {num_circles}"
 
     # Draw the count on the image at the bottom left
-    cv2.putText(output, count_text, (20, target_height - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+    cv2.putText(output, count_text, (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
     cv2.imwrite(output_path, output)
     return output_path
