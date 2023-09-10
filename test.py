@@ -18,8 +18,7 @@ def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-
-def detect_circles(image_path, output_path):
+def detect_circles(image_path, output_path, dp=1.1, minDist=10, param1=300, param2=40, minRadius=10, maxRadius=40):
     image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
 
     # resizing image
@@ -47,23 +46,24 @@ def detect_circles(image_path, output_path):
         image, top_border, bottom_border, left_border, right_border, cv2.BORDER_CONSTANT, value=[0, 0, 0]
     )
 
-    # Hough Circle Transform
-    circles = cv2.HoughCircles(resized_image, cv2.HOUGH_GRADIENT, dp=1.1, minDist=10,
-                               param1=300, param2=40, minRadius=10, maxRadius=40)
+    # Hough Circle Transform using the passed parameters
+    circles = cv2.HoughCircles(resized_image, cv2.HOUGH_GRADIENT, dp=dp, minDist=minDist,
+                               param1=param1, param2=param2, minRadius=minRadius, maxRadius=maxRadius)
 
     output = cv2.cvtColor(resized_image, cv2.COLOR_GRAY2BGR)
     if circles is not None:
         circles = np.uint16(np.around(circles))
-        for circle in circles[0,:]:
+        for circle in circles[0, :]:
             center = (circle[0], circle[1])  # center
             # cv2.circle(output, center, radius, (0, 255, 0), 2)
             cv2.circle(output, center, 2, (0, 0, 255), 3)  # Draw center
+
     # Count the number of detected circles
     num_circles = len(circles[0]) if circles is not None else 0
-
-    # Draw the count on the image
     count_text = f"Pipes: {num_circles}"
-    cv2.putText(output, count_text, (20, target_height - (target_height//2)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+    # Draw the count on the image at the bottom left
+    cv2.putText(output, count_text, (20, target_height - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
     cv2.imwrite(output_path, output)
     return output_path
@@ -77,17 +77,26 @@ def upload_file():
         if file.filename == '':
             return "No selected file", 400
         if file and allowed_file(file.filename):
-            file_path = UPLOAD_FOLDER + '/upload.jpg'
+            file_path = os.path.join(UPLOAD_FOLDER, 'upload.jpg')
             file.save(file_path)
+            
+            # Retrieve the circle detection parameters from the form with default values
+            dp = float(request.form.get('dp', 1.1))
+            minDist = int(request.form.get('minDist', 10))
+            param1 = int(request.form.get('param1', 300))
+            param2 = int(request.form.get('param2', 40))
+            minRadius = int(request.form.get('minRadius', 10))
+            maxRadius = int(request.form.get('maxRadius', 40))
 
             # Detect circles
-            output_path = RESULT_FOLDER + '/result.jpg'
-            detect_circles(file_path, output_path)
+            output_path = f"{RESULT_FOLDER}/result.jpg"
+            detect_circles(file_path, output_path, dp, minDist, param1, param2, minRadius, maxRadius)
 
-            # Send the path relative to static for Flask's url_for to work correctly
             return render_template('result.html', filename='result/result.jpg')
 
+
     return render_template('upload.html')
+
 
 
 
